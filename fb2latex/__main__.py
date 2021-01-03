@@ -45,13 +45,20 @@ def tex_escape(text):
 ns = {'fb': 'http://www.gribuser.ru/xml/fictionbook/2.0',
       'xlink': 'http://www.w3.org/1999/xlink'}
 
+devices = {
+    "PocketBook_Lux4": {
+        "paperheight": "122mm",
+        "paperwidth": "91mm",
+    }
+}
+
 hdr = """
 \\documentclass[9pt]{extarticle}
 \\usepackage{luatextra,fontspec,polyglossia,microtype}
 \\setmainlanguage{czech}
 \\setmainfont{Open Sans}
 
-\\usepackage[paperheight=122mm,paperwidth=91mm,margin=3mm,footskip=3mm,includefoot]{geometry}
+\\usepackage[paperheight={{paperheight}},paperwidth={{paperwidth}},margin=2mm,footskip=1.5em,includefoot]{geometry}
 
 
 \\usepackage{fancyhdr,lastpage}
@@ -114,7 +121,7 @@ def parse_section(el, deep):
             continue
 
 
-def fb2latex(src):
+def fb2latex(src, cfgs):
     global notes
 
     tree = lxml.etree.parse(src)
@@ -123,7 +130,13 @@ def fb2latex(src):
     body = root.xpath('fb:body', namespaces=ns)[0]
     notes = root.xpath('fb:body[@name="notes"]', namespaces=ns)
 
-    print(hdr)
+    h = hdr
+
+    for k,v in cfgs.items():
+        h = h.replace(f"{{{{{k}}}}}", v)
+
+    print(h)
+
     for s in body.getchildren():
         tag = lxml.etree.QName(s).localname
         if tag == 'section':
@@ -136,9 +149,14 @@ def fb2latex(src):
 def main():
     parser = argparse.ArgumentParser(description='Convert fb2 to latex')
     parser.add_argument('src', type=argparse.FileType('r'))
+    parser.add_argument('--device',
+                        choices=devices.keys(),
+                        default=list(devices.keys())[0],
+                        help="Device definition")
+
     args = parser.parse_args()
 
-    fb2latex(args.src)
+    fb2latex(args.src, devices[args.device])
 
 
 if __name__ == "__main__":
