@@ -53,18 +53,17 @@ devices = {
 
 hdr = """
 \\documentclass[9pt]{extarticle}
-\\usepackage{luatextra,fontspec,polyglossia,microtype,epigraph}
+\\usepackage{luatextra,fontspec,polyglossia,microtype}
 \\setmainlanguage{czech}
 \\setmainfont{Open Sans}
 
 \\usepackage[paperheight={{paperheight}},paperwidth={{paperwidth}},margin=2mm,footskip=1.5em,includefoot]{geometry}
 
-
-\\usepackage{fancyhdr,lastpage}
-\\pagestyle{fancy}
+\\usepackage{fancyhdr,lastpage,poemscol}
 \\fancyhead{}
 \\cfoot{\\thepage/\\pageref{LastPage}}
 \\renewcommand{\\headrulewidth}{0pt}
+
 \\pagestyle{fancy}
 
 
@@ -86,15 +85,39 @@ def parse_epigraph(el):
                 if not first:
                     print("\\\\")
                 first = False
-                print(item.text)
+                print(item.text, end='')
             elif tag == 'text-author':
                 author = item.text
             else:
                 raise Exception()
-        print(f"}}{{{author}}}")
+        print("}")
+        if author:
+            print(f"\\attribution{{{author}}}")
 
     else:
         raise Exception()
+
+def parse_poem(el):
+    print("\\begin{poem}")
+    for item in el.getchildren():
+        tag = lxml.etree.QName(item).localname
+        if tag == 'staza':
+            print("\\begin{stanza}")
+            first = True
+            for item2 in item.getchildren():
+                tag = lxml.etree.QName(item2).localname
+                if tag == 'v':
+                    if not first:
+                        print("\\verseline")
+                    first = False
+                    print(item2.text)
+                else:
+                    raise Exception(tag)
+            print("\\end{stanza}")
+        else:
+            raise Exception()
+    print("\\end{poem}")
+
 
 
 def parse_p(el):
@@ -143,6 +166,8 @@ def parse_section(el, deep):
             continue
         elif tag == 'epigraph':
             parse_epigraph(s)
+        elif tag == 'poem':
+            parse_poem(s)
         else:
             continue
 
