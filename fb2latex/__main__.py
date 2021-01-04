@@ -101,7 +101,7 @@ def parse_poem(el):
     print("\\begin{poem}")
     for item in el.getchildren():
         tag = lxml.etree.QName(item).localname
-        if tag == 'staza':
+        if tag == 'stanza':
             print("\\begin{stanza}")
             first = True
             for item2 in item.getchildren():
