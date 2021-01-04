@@ -22,7 +22,6 @@ import argparse
 import re
 import lxml.etree
 
-
 def tex_escape(text):
     conv = {
         '&': r'\&',
@@ -47,14 +46,14 @@ ns = {'fb': 'http://www.gribuser.ru/xml/fictionbook/2.0',
 
 devices = {
     "PocketBook_Lux4": {
-        "paperheight": "122mm",
+        "paperheight": "121mm",
         "paperwidth": "91mm",
     }
 }
 
 hdr = """
 \\documentclass[9pt]{extarticle}
-\\usepackage{luatextra,fontspec,polyglossia,microtype}
+\\usepackage{luatextra,fontspec,polyglossia,microtype,epigraph}
 \\setmainlanguage{czech}
 \\setmainfont{Open Sans}
 
@@ -73,6 +72,29 @@ hdr = """
 """
 
 notes = None
+
+def parse_epigraph(el):
+    ch = el.getchildren()
+    if len(ch) == 1 and lxml.etree.QName(ch[0]).localname == 'cite':
+        author = ""
+
+        print("\\epigraph{", end="")
+        first = True
+        for item in ch[0].getchildren():
+            tag = lxml.etree.QName(item).localname
+            if tag == 'p':
+                if not first:
+                    print("\\\\")
+                first = False
+                print(item.text)
+            elif tag == 'text-author':
+                author = item.text
+            else:
+                raise Exception()
+        print(f"}}{{{author}}}")
+
+    else:
+        raise Exception()
 
 
 def parse_p(el):
@@ -117,6 +139,10 @@ def parse_section(el, deep):
             parse_p(s)
         elif tag == 'empty-line':
             print("\\medskip")
+        elif tag == 'title':
+            continue
+        elif tag == 'epigraph':
+            parse_epigraph(s)
         else:
             continue
 
